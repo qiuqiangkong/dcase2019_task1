@@ -20,7 +20,7 @@ The dataset can be downloaded from http://dcase.community/challenge2019/task-aco
 | Subtask B | 10265 = 9185 (Device A) + 540 (Device B) + 540 (Device C) | 5265 = 4185 (Device A) + 540 (Device B) + 540 (Device C) |      -     |
 | Subtask C |         10290 = 9185 (in domain) + 1105 (unknown)         |          4530 = 4185 (in domain) + 345 (unknown)         |      -     |
 
-The log mel spectrogram of different acoustic scenes looks like:
+The log mel spectrogram of different acoustic scenes should looks like:
 
 ![alt text](appendixes/logmel.png)
 
