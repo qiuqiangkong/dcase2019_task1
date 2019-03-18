@@ -16,7 +16,15 @@ import config
 
 class Evaluator(object):
     def __init__(self, model, data_generator, cuda=True):
-
+        '''Evaluator to evaluate prediction performance. 
+        
+        Args: 
+          model: object
+          data_generator: object
+          cuda: bool
+          verbose: bool
+        '''
+        
         self.model = model
         self.data_generator = data_generator
         self.cuda = cuda
@@ -25,7 +33,15 @@ class Evaluator(object):
         self.labels = config.labels
         self.idx_to_lb = config.idx_to_lb
 
-    def evaluate(self, data_type, sources, submission_path, max_iteration=None):
+    def evaluate(self, data_type, sources, submission_path, max_iteration=None, verbose=False):
+        '''Evaluate the performance. 
+        
+        Args: 
+          data_type: 'train' | 'validate'
+          sources: list of devices
+          submission_path: string
+          max_iteration: None | int, maximum iteration to run to speed up evaluation
+        '''
 
         generate_func = self.data_generator.generate_validate(
             data_type=data_type, 
@@ -42,26 +58,37 @@ class Evaluator(object):
         logprob = output_dict['output']
         target = output_dict['target']
         
+        # Evaluate
         confusion_matrix = metrics.confusion_matrix(
             y_true=np.argmax(target, axis=-1), 
             y_pred=np.argmax(logprob, axis=-1), 
             labels=None)
         
-        classwise_accuracy = np.diag(confusion_matrix) / np.sum(confusion_matrix, axis=-1)
+        classwise_accuracy = np.diag(confusion_matrix) \
+            / np.sum(confusion_matrix, axis=-1)
         
-        logging.info('Devices: {}, {} accuracy: {:.3f}'.format(sources, data_type, np.mean(classwise_accuracy)))
+        logging.info('Devices: {}. Data type: {}. Accuracy:'.format(
+            sources, data_type))
+        
+        if verbose:
+            classes_num = len(classwise_accuracy)
+            for n in range(classes_num):
+                logging.info('{:<20}{:.3f}'.format(self.labels[n], 
+                    classwise_accuracy[n]))
+        
+        logging.info('{:<20}{:.3f}'.format('Avg.', np.mean(classwise_accuracy)))
             
-    def visualize(self, data_type, max_iteration=None):
+    def visualize(self, data_type, sources, max_iteration=None):
 
         mel_bins = config.mel_bins
         audio_duration = config.audio_duration
         frames_num = config.frames_num
-        classes_num = config.classes_num
         labels = config.labels
         idx_to_lb = config.idx_to_lb
         
         generate_func = self.data_generator.generate_validate(
             data_type=data_type, 
+            sources=sources, 
             max_iteration=max_iteration)
         
         # Forward
@@ -74,6 +101,7 @@ class Evaluator(object):
 
         rows_num = 3
         cols_num = 4
+        classes_num = output_dict['target'].shape[1]
         
         fig, axs = plt.subplots(rows_num, cols_num, figsize=(10, 5))
 
