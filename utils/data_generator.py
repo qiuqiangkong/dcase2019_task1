@@ -43,15 +43,19 @@ class DataGenerator(object):
         train_meta = read_metadata(train_csv)
         validate_meta = read_metadata(validate_csv)
 
-        t1 = time.time()
-        self.train_audio_indexes = self.get_audio_indexes(train_meta, self.data_dict)
-        self.validate_audio_indexes = self.get_audio_indexes(validate_meta, self.data_dict,)
+        self.train_audio_indexes = self.get_audio_indexes(
+            train_meta, self.data_dict)
+            
+        self.validate_audio_indexes = self.get_audio_indexes(
+            validate_meta, self.data_dict,)
         
         logging.info('Load data time: {:.3f} s'.format(time.time() - load_time))
         logging.info('Training audio num: {}'.format(len(self.train_audio_indexes)))            
         logging.info('Validation audio num: {}'.format(len(self.validate_audio_indexes)))
         
     def load_hdf5(self, hdf5_path):
+        '''Load hdf5 file. 
+        '''
         data_dict = {}
         
         with h5py.File(hdf5_path, 'r') as hf:
@@ -89,7 +93,11 @@ class DataGenerator(object):
         return np.array(audio_indexes)
         
     def generate_train(self):
-
+        '''Generate mini-batch data for training. 
+        
+        Returns:
+          batch_data_dict: dict containing audio_name, feature and target
+        '''
         batch_size = self.batch_size
         classes_num = self.classes_num
         audio_indexes = np.array(self.train_audio_indexes)
