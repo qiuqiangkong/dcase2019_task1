@@ -77,10 +77,10 @@ def train(args):
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
         '{}.h5'.format(sub_dir))
         
-    models_dir = os.path.join(workspace, 'models', filename, 
+    checkpoints_dir = os.path.join(workspace, 'checkpoints', filename, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
         '{}'.format(sub_dir))
-    create_folder(models_dir)
+    create_folder(checkpoints_dir)
     
     logs_dir = os.path.join(workspace, 'logs', filename, args.mode, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
@@ -135,13 +135,15 @@ def train(args):
                 data_type='train', 
                 submission_path=None, 
                 sources=['a', 'b', 'c'], 
-                max_iteration=None)
+                max_iteration=None, 
+                verbose=False)
             
             evaluator.evaluate(
                 data_type='validate', 
                 sources=['a', 'b', 'c'], 
                 submission_path=None, 
-                max_iteration=None)
+                max_iteration=None, 
+                verbose=False)
 
             train_time = train_fin_time - train_bgn_time
             validate_time = time.time() - train_fin_time
@@ -160,7 +162,7 @@ def train(args):
                 'optimizer': optimizer.state_dict()}
 
             checkpoint_path = os.path.join(
-                models_dir, 'md_{}_iters.pth'.format(iteration))
+                checkpoints_dir, '{}_iterations.pth'.format(iteration))
                 
             torch.save(checkpoint, checkpoint_path)
             logging.info('Model saved to {}'.format(checkpoint_path))
@@ -250,9 +252,9 @@ def inference_validation(args):
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
         '{}.h5'.format(sub_dir))
         
-    model_path = os.path.join(workspace, 'models', filename, 
+    model_path = os.path.join(workspace, 'checkpoints', filename, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        '{}'.format(sub_dir), 'md_{}_iters.pth'.format(iteration))
+        '{}'.format(sub_dir), '{}_iterations.pth'.format(iteration))
     
     logs_dir = os.path.join(workspace, 'logs', filename, args.mode, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
@@ -293,19 +295,19 @@ def inference_validation(args):
     
     if subtask in ['a', 'c']:
         evaluator.evaluate(data_type='validate', 
-            submission_path=submission_path, sources=['a'])
+            submission_path=submission_path, sources=['a'], verbose=True)
     elif subtask == 'b':
         evaluator.evaluate(data_type='validate', 
-            submission_path=submission_path, sources=['a'])
+            submission_path=submission_path, sources=['a'], verbose=True)
         evaluator.evaluate(data_type='validate', 
-            submission_path=submission_path, sources=['b'])
+            submission_path=submission_path, sources=['b'], verbose=True)
         evaluator.evaluate(data_type='validate', 
-            submission_path=submission_path, sources=['c'])
+            submission_path=submission_path, sources=['c'], verbose=True)
         evaluator.evaluate(data_type='validate', 
-            submission_path=submission_path, sources=['a', 'b', 'c'])
+            submission_path=submission_path, sources=['a', 'b', 'c'], verbose=True)
     
     if visualize:
-        evaluator.visualize(data_type='validate')
+        evaluator.visualize(data_type='validate', sources=['a'])
     
 
 if __name__ == '__main__':
