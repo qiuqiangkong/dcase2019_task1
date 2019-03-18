@@ -138,7 +138,6 @@ def calculate_feature_for_all_audio_files(args):
     meta_dict = read_metadata(metadata_path)
 
     # Extract features and targets 
-    
     if mini_data:
         mini_num = 10
         total_num = len(meta_dict['audio_name'])
@@ -212,6 +211,13 @@ def calculate_feature_for_all_audio_files(args):
     
     
 def calculate_scalar(args):
+    '''Calculate and write out scalar of features. 
+    
+    Args:
+      data_type: 'train'
+      workspace: string
+      mini_data: bool, set True for debugging on a small part of data
+    '''
 
     # Arguments & parameters
     subtask = args.subtask
