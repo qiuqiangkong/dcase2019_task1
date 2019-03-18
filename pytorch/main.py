@@ -79,7 +79,7 @@ def train(args):
         
     checkpoints_dir = os.path.join(workspace, 'checkpoints', filename, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        '{}'.format(sub_dir))
+        model_type, '{}'.format(sub_dir))
     create_folder(checkpoints_dir)
     
     logs_dir = os.path.join(workspace, 'logs', filename, args.mode, 
@@ -252,9 +252,9 @@ def inference_validation(args):
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
         '{}.h5'.format(sub_dir))
         
-    model_path = os.path.join(workspace, 'checkpoints', filename, 
+    checkpoint_path = os.path.join(workspace, 'checkpoints', filename, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        '{}'.format(sub_dir), '{}_iterations.pth'.format(iteration))
+        model_type, '{}'.format(sub_dir), '{}_iterations.pth'.format(iteration))
     
     logs_dir = os.path.join(workspace, 'logs', filename, args.mode, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
@@ -272,7 +272,7 @@ def inference_validation(args):
     # Load model
     Model = eval(model_type)
     model = Model(classes_num)
-    checkpoint = torch.load(model_path)
+    checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint['model'])
     
     if cuda:
