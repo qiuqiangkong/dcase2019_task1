@@ -95,11 +95,18 @@ Validation audio num: 4185
 ------------------------------------
 ...
 ------------------------------------
-INFO Iteration: 5000
-INFO train accuracy: 0.999
-INFO validate accuracy: 0.646
-Train time: 38.730 s, validate time: 24.535 s
-Model saved to /vol/vssp/msos/qk/workspaces/dcase2019_task1/models/main/logmel_64frames_64melbins/TAU-urban-acoustic-scenes-2019-development/md_5000_iters.pth
+Iteration: 5000
+Data type: train
+    Source: a
+    Accuracy: 0.996
+Data type: validate
+    Source: a
+    Accuracy: 0.693
+    Dump statistics to /vol/vssp/msos/qk/workspaces/dcase2019_task1/statistics/main/logmel_64frames_64melbins/Cnn_9layers_AvgPooling/TAU-urban-acoustic-scen
+es-2019-development/validate_statistics.pickle
+Train time: 40.492 s, validate time: 25.221 s
+Model saved to /vol/vssp/msos/qk/workspaces/dcase2019_task1/checkpoints/main/logmel_64frames_64melbins/Cnn_9layers_AvgPooling/TAU-urban-acoustic-scenes-201$
+-development/5000_iterations.pth
 ------------------------------------
 ...
 </pre>
