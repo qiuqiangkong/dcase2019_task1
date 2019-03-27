@@ -16,9 +16,9 @@ import torch.optim as optim
 from utilities import (create_folder, get_filename, create_logging, load_scalar, 
     get_subdir, get_sources, get_classes_num)
 from data_generator import DataGenerator
-from models import Cnn_9layers
+from models import Cnn_9layers_MaxPooling, Cnn_9layers_AvgPooling, Cnn_13layers_AvgPooling
 from losses import nll_loss
-from evaluate import Evaluator
+from evaluate import Evaluator, StatisticsContainer
 from pytorch_utils import move_data_to_gpu
 import config
 
@@ -52,8 +52,8 @@ def train(args):
     max_iteration = 10      # Number of mini-batches to evaluate on training data
     reduce_lr = True
     
-    sources = get_sources(subtask)
-    classes_num = get_classes_num(subtask)
+    sources_to_evaluate = get_sources(subtask)
+    in_domain_classes_num = len(config.labels) - 1
     
     # Paths
     if mini_data:
@@ -81,10 +81,15 @@ def train(args):
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
         model_type, '{}'.format(sub_dir))
     create_folder(checkpoints_dir)
+
+    validate_statistics_path = os.path.join(workspace, 'statistics', filename, 
+        '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
+        model_type, '{}'.format(sub_dir), 'validate_statistics.pickle')
+    create_folder(os.path.dirname(validate_statistics_path))
     
     logs_dir = os.path.join(workspace, 'logs', filename, args.mode, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        '{}'.format(sub_dir))
+        model_type, '{}'.format(sub_dir))
     create_logging(logs_dir, 'w')
     logging.info(args)
 
@@ -93,7 +98,14 @@ def train(args):
     
     # Model
     Model = eval(model_type)
-    model = Model(classes_num)
+    
+    if subtask in ['a', 'b']:
+        model = Model(in_domain_classes_num, activation='logsoftmax')
+        loss_func = nll_loss
+        
+    elif subtask == 'c':
+        model = Model(in_domain_classes_num, activation='sigmoid')
+        loss_func = F.binary_cross_entropy
     
     if cuda:
         model.cuda()
@@ -107,7 +119,6 @@ def train(args):
         feature_hdf5_path=feature_hdf5_path, 
         train_csv=train_csv, 
         validate_csv=validate_csv, 
-        classes_num=classes_num, 
         scalar=scalar, 
         batch_size=batch_size)
     
@@ -115,8 +126,12 @@ def train(args):
     evaluator = Evaluator(
         model=model, 
         data_generator=data_generator, 
+        subtask=subtask, 
         cuda=cuda)
     
+    # Statistics
+    validate_statistics_container = StatisticsContainer(validate_statistics_path)
+
     train_bgn_time = time.time()
     iteration = 0
     
@@ -125,25 +140,27 @@ def train(args):
         
         # Evaluate
         if iteration % 200 == 0:
-
             logging.info('------------------------------------')
             logging.info('Iteration: {}'.format(iteration))
 
             train_fin_time = time.time()
 
-            evaluator.evaluate(
-                data_type='train', 
-                submission_path=None, 
-                sources=['a', 'b', 'c'], 
-                max_iteration=None, 
-                verbose=False)
+            for source in sources_to_evaluate:
+                train_statistics = evaluator.evaluate(
+                    data_type='train', 
+                    source=source, 
+                    max_iteration=None, 
+                    verbose=False)
             
-            evaluator.evaluate(
-                data_type='validate', 
-                sources=['a', 'b', 'c'], 
-                submission_path=None, 
-                max_iteration=None, 
-                verbose=False)
+            for source in sources_to_evaluate:
+                validate_statistics = evaluator.evaluate(
+                    data_type='validate', 
+                    source=source, 
+                    max_iteration=None, 
+                    verbose=False)
+
+                validate_statistics_container.append_and_dump(
+                    iteration, source, validate_statistics)
 
             train_time = train_fin_time - train_bgn_time
             validate_time = time.time() - train_fin_time
@@ -182,7 +199,7 @@ def train(args):
         batch_output = model(batch_data_dict['feature'])
         
         # loss
-        loss = nll_loss(batch_output, batch_data_dict['target'])
+        loss = loss_func(batch_output, batch_data_dict['target'])
 
         # Backward
         optimizer.zero_grad()
@@ -256,15 +273,15 @@ def inference_validation(args):
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
         model_type, '{}'.format(sub_dir), '{}_iterations.pth'.format(iteration))
     
-    logs_dir = os.path.join(workspace, 'logs', filename, args.mode, 
-        '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        '{}'.format(sub_dir))
-    create_logging(logs_dir, 'w')
-    logging.info(args)
-    
     submission_path = os.path.join(workspace, 'submissions', filename, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        '{}'.format(sub_dir), 'md_{}_iters'.format(iteration), 'submission.csv')
+        model_type, '{}'.format(sub_dir), 'md_{}_iters'.format(iteration), 'submission.csv')
+    
+    logs_dir = os.path.join(workspace, 'logs', filename, args.mode, 
+        '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
+        model_type, '{}'.format(sub_dir))
+    create_logging(logs_dir, 'w')
+    logging.info(args)
         
     # Load scalar
     scalar = load_scalar(scalar_path)
@@ -294,20 +311,15 @@ def inference_validation(args):
         cuda=cuda)
     
     if subtask in ['a', 'c']:
-        evaluator.evaluate(data_type='validate', 
-            submission_path=submission_path, sources=['a'], verbose=True)
+        evaluator.evaluate(data_type='validate', source='a', verbose=True)
+        
     elif subtask == 'b':
-        evaluator.evaluate(data_type='validate', 
-            submission_path=submission_path, sources=['a'], verbose=True)
-        evaluator.evaluate(data_type='validate', 
-            submission_path=submission_path, sources=['b'], verbose=True)
-        evaluator.evaluate(data_type='validate', 
-            submission_path=submission_path, sources=['c'], verbose=True)
-        evaluator.evaluate(data_type='validate', 
-            submission_path=submission_path, sources=['a', 'b', 'c'], verbose=True)
+        evaluator.evaluate(data_type='validate', source='a', verbose=True)
+        evaluator.evaluate(data_type='validate', source='b', verbose=True)
+        evaluator.evaluate(data_type='validate', source='c', verbose=True)
     
     if visualize:
-        evaluator.visualize(data_type='validate', sources=['a'])
+        evaluator.visualize(data_type='validate', sources='a')
     
 
 if __name__ == '__main__':

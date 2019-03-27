@@ -14,7 +14,7 @@ import config
 
 class DataGenerator(object):
     
-    def __init__(self, feature_hdf5_path, train_csv, validate_csv, classes_num, 
+    def __init__(self, feature_hdf5_path, train_csv, validate_csv, 
         scalar, batch_size, seed=1234):
         '''Data generator for training and validation. 
         
@@ -32,8 +32,11 @@ class DataGenerator(object):
         self.batch_size = batch_size
         self.random_state = np.random.RandomState(seed)
         
-        self.classes_num = classes_num
+        # self.classes_num = classes_num
+        self.in_domain_classes_num = len(config.labels) - 1
+        self.all_classes_num = len(config.labels)
         self.lb_to_idx = config.lb_to_idx
+        self.idx_to_lb = config.idx_to_lb
         
         # Load training data
         load_time = time.time()
@@ -44,10 +47,10 @@ class DataGenerator(object):
         validate_meta = read_metadata(validate_csv)
 
         self.train_audio_indexes = self.get_audio_indexes(
-            train_meta, self.data_dict)
+            train_meta, self.data_dict, 'train')
             
         self.validate_audio_indexes = self.get_audio_indexes(
-            validate_meta, self.data_dict,)
+            validate_meta, self.data_dict, 'validate')
         
         logging.info('Load data time: {:.3f} s'.format(time.time() - load_time))
         logging.info('Training audio num: {}'.format(len(self.train_audio_indexes)))            
@@ -80,15 +83,21 @@ class DataGenerator(object):
             
         return data_dict
         
-    def get_audio_indexes(self, meta, data_dict):
+    def get_audio_indexes(self, meta, data_dict, data_type):
         '''Get train or validate indexes. 
         '''
         audio_indexes = []
         
         for name in meta['audio_name']:
             loct = np.argwhere(data_dict['audio_name'] == name)
+            
             if len(loct) > 0:
-                audio_indexes.append(loct[0, 0])
+                index = loct[0, 0]
+                label = self.idx_to_lb[self.data_dict['target'][index]]
+                if data_type == 'train' and label != 'unknown':
+                    audio_indexes.append(index)
+                elif data_type == 'validate':
+                    audio_indexes.append(index)
             
         return np.array(audio_indexes)
         
@@ -99,7 +108,6 @@ class DataGenerator(object):
           batch_data_dict: dict containing audio_name, feature and target
         '''
         batch_size = self.batch_size
-        classes_num = self.classes_num
         audio_indexes = np.array(self.train_audio_indexes)
         self.random_state.shuffle(audio_indexes)
         pointer = 0
@@ -125,40 +133,40 @@ class DataGenerator(object):
             
             sparse_target = self.data_dict['target'][batch_audio_indexes]
             batch_data_dict['target'] = sparse_to_categorical(
-                sparse_target, classes_num)
+                sparse_target, self.in_domain_classes_num)
             
             yield batch_data_dict
             
-    def get_source_indexes(self, indexes, data_dict, sources): 
-        '''Get indexes of specific sources. 
+    def get_source_indexes(self, indexes, data_dict, source): 
+        '''Get indexes of specific source. 
         '''
         source_indexes = np.array([index for index in indexes \
-            if data_dict['source_label'][index] in sources])
+            if data_dict['source_label'][index] == source])
             
         return source_indexes
             
-    def generate_validate(self, data_type, sources, max_iteration=None):
+    def generate_validate(self, data_type, source, max_iteration=None):
         '''Generate mini-batch data for training. 
         
         Args:
           data_type: 'train' | 'validate'
-          sources: list of devices
+          source: 'a' | 'b' | 'c'
           max_iteration: int, maximum iteration to validate to speed up validation
         
         Returns:
           batch_data_dict: dict containing audio_name, feature and target
         '''
         batch_size = self.batch_size
-        classes_num = self.classes_num
         
         if data_type == 'train':
             audio_indexes = np.array(self.train_audio_indexes)
         elif data_type == 'validate':
             audio_indexes = np.array(self.validate_audio_indexes)
-            audio_indexes = self.get_source_indexes(
-                audio_indexes, self.data_dict, sources)
         else:
             raise Exception('Incorrect argument!')
+            
+        audio_indexes = self.get_source_indexes(
+            audio_indexes, self.data_dict, source)
             
         iteration = 0
         pointer = 0
@@ -187,7 +195,7 @@ class DataGenerator(object):
             
             sparse_target = self.data_dict['target'][batch_audio_indexes]
             batch_data_dict['target'] = sparse_to_categorical(
-                sparse_target, classes_num)
+                sparse_target, self.all_classes_num)
 
             yield batch_data_dict
             

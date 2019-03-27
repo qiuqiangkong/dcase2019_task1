@@ -152,7 +152,4 @@ def get_sources(subtask):
         
         
 def get_classes_num(subtask):
-    if subtask in ['a', 'b']:
-        return len(config.labels) - 1   # Remove unknown label
-    elif subtask == 'c':
-        return len(config.labels)
+    return len(config.labels) - 1   # Remove unknown label
