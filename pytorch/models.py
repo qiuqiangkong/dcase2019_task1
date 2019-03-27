@@ -56,10 +56,10 @@ class Cnn_5layers_AvgPooling(nn.Module):
         self.init_weights()
 
     def init_weights(self):
-        init_layer(conv1)
-        init_layer(conv2)
-        init_layer(conv3)
-        init_layer(conv4)
+        init_layer(self.conv1)
+        init_layer(self.conv2)
+        init_layer(self.conv3)
+        init_layer(self.conv4)
         init_layer(self.fc)
         
         init_bn(self.bn1)

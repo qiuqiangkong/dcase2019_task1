@@ -16,7 +16,7 @@ import torch.optim as optim
 from utilities import (create_folder, get_filename, create_logging, load_scalar, 
     get_subdir, get_sources, get_classes_num)
 from data_generator import DataGenerator
-from models import Cnn_9layers_MaxPooling, Cnn_9layers_AvgPooling, Cnn_13layers_AvgPooling
+from models import Cnn_5layers_AvgPooling, Cnn_9layers_MaxPooling, Cnn_9layers_AvgPooling, Cnn_13layers_AvgPooling
 from losses import nll_loss
 from evaluate import Evaluator, StatisticsContainer
 from pytorch_utils import move_data_to_gpu
