@@ -35,5 +35,8 @@ CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py train --dataset_dir=$DATASET
 
 CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py inference_validation --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='c' --data_type='development' --model_type=$MODEL_TYPE --iteration=5000 --batch_size=$BATCH_SIZE --cuda
 
+# Plot statistics
+python utils/plot_results.py --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask=a
+
 ############ END ############
 
