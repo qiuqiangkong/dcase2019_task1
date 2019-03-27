@@ -7,7 +7,7 @@ WORKSPACE='/vol/vssp/msos/qk/workspaces/dcase2019_task1'
 
 # Hyper-parameters
 GPU_ID=1
-MODEL_TYPE='Cnn_9layers'
+MODEL_TYPE='Cnn_9layers_AvgPooling'
 BATCH_SIZE=32
 
 # Calculate feature
