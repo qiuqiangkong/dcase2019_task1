@@ -84,7 +84,7 @@ class Cnn_5layers_AvgPooling(nn.Module):
         x = F.avg_pool2d(x, kernel_size=(2, 2))
         
         x = F.relu_(self.bn4(self.conv4(x)))
-        x = F.avg_pool2d(x, kernel_size=(2, 2))
+        x = F.avg_pool2d(x, kernel_size=(1, 1))
         '''(batch_size, feature_maps, time_steps, freq_bins)'''
         
         x = torch.mean(x, dim=3)        # (batch_size, feature_maps, time_stpes)
