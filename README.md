@@ -126,11 +126,11 @@ Model saved to /vol/vssp/msos/qk/workspaces/dcase2019_task1/checkpoints/main/log
 
 **Subtask B**
 
-<img src="https://github.com/qiuqiangkong/dcase2019_task1/blob/dev/appendixes/subtask_a.png" width="800">
+<img src="https://github.com/qiuqiangkong/dcase2019_task1/blob/dev/appendixes/subtask_b.png" width="800">
 
 **Subtask C**
 
-<img src="https://github.com/qiuqiangkong/dcase2019_task1/blob/dev/appendixes/subtask_a.png" width="800">
+<img src="https://github.com/qiuqiangkong/dcase2019_task1/blob/dev/appendixes/subtask_c.png" width="800">
 
 ## Summary
 This codebase provides a convolutional neural network (CNN) for DCASE 2019 challenge Task 1 Acoustic scene classification. 
