@@ -114,11 +114,9 @@ Model saved to /vol/vssp/msos/qk/workspaces/dcase2019_task1/checkpoints/main/log
 
 **Classification result**
 
-|                 | Subtask A | Subtask B (Average device B, C) | Subtask C |
-|:---------------:|:---------:|:-------------------------------:|:---------:|
-| Official result |   62.5%   |              41.4%              |   48.7%   |
-|       VGG9      |   64.7%   |              59.0%              |   60.4%   |
+The table below shows the development performance of different models. The official baseline system is from [2]. 
 
+<img src="appendixes/results.png" width="800">
 
 **Subtask A**
 
@@ -130,17 +128,18 @@ Model saved to /vol/vssp/msos/qk/workspaces/dcase2019_task1/checkpoints/main/log
 
 **Subtask C**
 
-<img src="subtask_c.png" width="800">
+<img src="appendixes/subtask_c.png" width="800">
 
 ## Summary
 This codebase provides a convolutional neural network (CNN) for DCASE 2019 challenge Task 1 Acoustic scene classification. 
 
 ## Citation
-To appear. 
+[1] To appear. 
 
 ## FAQ
 If you met running out of GPU memory error, then try to reduce batch_size. 
 
-## External link
+## External link & references
+[2] https://github.com/toni-heittola/dcase2019_task1_baseline
 
-The official baseline system implemented using Keras can be found in https://github.com/toni-heittola/dcase2019_task1_baseline
+[3] Annamaria Mesaros, Toni Heittola, and Tuomas Virtanen. A multi-device dataset for urban acoustic scene classification. In Proceedings of the Detection and Classification of Acoustic Scenes and Events 2018 Workshop (DCASE2018), 9–13. November 2018. URL: https://arxiv.org/abs/1807.09840.

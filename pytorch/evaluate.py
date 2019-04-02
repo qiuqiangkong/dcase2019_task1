@@ -92,9 +92,9 @@ class Evaluator(object):
         logging.info('    Source: {}'.format(source))
         
         if self.subtask in ['a', 'b']:
-            logging.info('    Accuracy: {:.3f}'.format(np.mean(classwise_accuracy)))
+            logging.info('    Average ccuracy: {:.3f}'.format(np.mean(classwise_accuracy)))
         elif self.subtask == 'c':
-            logging.info('    In domain ccuracy: {:.3f}, Unknown accuracy: {:.3f}'
+            logging.info('    In domain accuracy: {:.3f}, Unknown accuracy: {:.3f}'
                 ''.format(np.mean(classwise_accuracy[0 : -1]), classwise_accuracy[-1]))
 
         if verbose:
