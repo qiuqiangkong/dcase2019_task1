@@ -114,9 +114,9 @@ Model saved to /vol/vssp/msos/qk/workspaces/dcase2019_task1/checkpoints/main/log
 
 **Classification result**
 
-The table below shows the development performance of different models. The official baseline system is from [2]. 
+The table below shows the development performance of different models. The official baseline system result is from [2]. 
 
-<img src="appendixes/results.png" width="800">
+<img src="appendixes/results.png" width="700">
 
 **Subtask A**
 
