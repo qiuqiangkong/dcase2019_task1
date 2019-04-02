@@ -114,7 +114,7 @@ Model saved to /vol/vssp/msos/qk/workspaces/dcase2019_task1/checkpoints/main/log
 
 **Classification result**
 
-The table below shows the development performance of different models. The official baseline system result is from [2]. 
+The table below shows the development performance of different models. The official baseline system result is from [2]. CNN5, CNN9-I, and CNN13 are 5-layer, 9-layer and 13-layer CNNs applies 2x2 average pooling. CNN9-II applies 2x2 max pooling. The table shows that CNN9 achieves a good result in Subtask A and B. 
 
 <img src="appendixes/results.png" width="700">
 
