@@ -19,10 +19,9 @@ class DataGenerator(object):
         '''Data generator for training and validation. 
         
         Args:
-          feature_hdf5_path: string
-          train_csv: string
-          validate_csv: string
-          classes_num: int
+          feature_hdf5_path: string, path of hdf5 feature file
+          train_csv: string, path of train csv file
+          validate_csv: string, path of validate csv file
           scalar: object, containing mean and std value
           batch_size: int
           seed: int, random seed
@@ -58,6 +57,13 @@ class DataGenerator(object):
         
     def load_hdf5(self, hdf5_path):
         '''Load hdf5 file. 
+        
+        Returns:
+          data_dict: dict of data, e.g.:
+            {'audio_name': np.array(['a.wav', 'b.wav', ...]), 
+             'feature': (audios_num, frames_num, mel_bins)
+             'target': (audios_num,), 
+             ...}
         '''
         data_dict = {}
         
@@ -83,12 +89,12 @@ class DataGenerator(object):
             
         return data_dict
         
-    def get_audio_indexes(self, meta, data_dict, data_type):
+    def get_audio_indexes(self, meta_data, data_dict, data_type):
         '''Get train or validate indexes. 
         '''
         audio_indexes = []
         
-        for name in meta['audio_name']:
+        for name in meta_data['audio_name']:
             loct = np.argwhere(data_dict['audio_name'] == name)
             
             if len(loct) > 0:
@@ -156,6 +162,7 @@ class DataGenerator(object):
         Returns:
           batch_data_dict: dict containing audio_name, feature and target
         '''
+        
         batch_size = self.batch_size
         
         if data_type == 'train':

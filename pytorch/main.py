@@ -14,9 +14,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from utilities import (create_folder, get_filename, create_logging, load_scalar, 
-    get_subdir, get_sources, get_classes_num)
+    get_subdir, get_sources)
 from data_generator import DataGenerator
-from models import Cnn_5layers_AvgPooling, Cnn_9layers_MaxPooling, Cnn_9layers_AvgPooling, Cnn_13layers_AvgPooling
+from models import (Cnn_5layers_AvgPooling, Cnn_9layers_MaxPooling, 
+    Cnn_9layers_AvgPooling, Cnn_13layers_AvgPooling)
 from losses import nll_loss
 from evaluate import Evaluator, StatisticsContainer
 from pytorch_utils import move_data_to_gpu
@@ -28,19 +29,23 @@ def train(args):
     
     Args: 
       dataset_dir: string, directory of dataset
-      subtask: 'a' | 'b' | 'c', corresponding to 3 subtasks in DCASE2019 Task1
-      data_type: 'development'
       workspace: string, directory of workspace
-      model_type: string, e.g. 'Cnn_9layers'
+      subtask: 'a' | 'b' | 'c', corresponds to 3 subtasks in DCASE2019 Task1
+      data_type: 'development' | 'evaluation'
+      holdout_fold: '1' | 'none', set 1 for development and none for training 
+          on all data without validation
+      model_type: string, e.g. 'Cnn_9layers_AvgPooling'
       batch_size: int
       cuda: bool
       mini_data: bool, set True for debugging on a small part of data
     '''
+    
     # Arugments & parameters
     dataset_dir = args.dataset_dir
+    workspace = args.workspace
     subtask = args.subtask
     data_type = args.data_type
-    workspace = args.workspace
+    holdout_fold = args.holdout_fold
     model_type = args.model_type
     batch_size = args.batch_size
     cuda = args.cuda and torch.cuda.is_available()
@@ -49,7 +54,7 @@ def train(args):
     
     mel_bins = config.mel_bins
     frames_per_second = config.frames_per_second
-    max_iteration = 10      # Number of mini-batches to evaluate on training data
+    max_iteration = None      # Number of mini-batches to evaluate on training data
     reduce_lr = True
     
     sources_to_evaluate = get_sources(subtask)
@@ -79,17 +84,20 @@ def train(args):
         
     checkpoints_dir = os.path.join(workspace, 'checkpoints', filename, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        model_type, '{}'.format(sub_dir))
+        '{}'.format(sub_dir), 'holdout_fold={}'.format(holdout_fold), 
+        model_type)
     create_folder(checkpoints_dir)
 
     validate_statistics_path = os.path.join(workspace, 'statistics', filename, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        model_type, '{}'.format(sub_dir), 'validate_statistics.pickle')
+        '{}'.format(sub_dir), 'holdout_fold={}'.format(holdout_fold), 
+        model_type, 'validate_statistics.pickle')
+    
     create_folder(os.path.dirname(validate_statistics_path))
     
     logs_dir = os.path.join(workspace, 'logs', filename, args.mode, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        model_type, '{}'.format(sub_dir))
+        '{}'.format(sub_dir), 'holdout_fold={}'.format(holdout_fold), model_type)
     create_logging(logs_dir, 'w')
     logging.info(args)
 
@@ -106,7 +114,7 @@ def train(args):
     elif subtask == 'c':
         model = Model(in_domain_classes_num, activation='sigmoid')
         loss_func = F.binary_cross_entropy
-    
+
     if cuda:
         model.cuda()
 
@@ -218,7 +226,7 @@ def inference_validation(args):
     
     Args: 
       dataset_dir: string, directory of dataset
-      subtask: 'a' | 'b' | 'c', corresponding to 3 subtasks in DCASE2019 Task1
+      subtask: 'a' | 'b' | 'c', corresponds to 3 subtasks in DCASE2019 Task1
       data_type: 'development'
       workspace: string, directory of workspace
       model_type: string, e.g. 'Cnn_9layers'
@@ -234,6 +242,7 @@ def inference_validation(args):
     data_type = args.data_type
     workspace = args.workspace
     model_type = args.model_type
+    holdout_fold = args.holdout_fold
     iteration = args.iteration
     batch_size = args.batch_size
     cuda = args.cuda and torch.cuda.is_available()
@@ -245,7 +254,7 @@ def inference_validation(args):
     frames_per_second = config.frames_per_second
     
     sources = get_sources(subtask)
-    classes_num = get_classes_num(subtask)
+    in_domain_classes_num = len(config.labels) - 1
     
     # Paths
     if mini_data:
@@ -271,15 +280,13 @@ def inference_validation(args):
         
     checkpoint_path = os.path.join(workspace, 'checkpoints', filename, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        model_type, '{}'.format(sub_dir), '{}_iterations.pth'.format(iteration))
-    
-    submission_path = os.path.join(workspace, 'submissions', filename, 
-        '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        model_type, '{}'.format(sub_dir), 'md_{}_iters'.format(iteration), 'submission.csv')
+        '{}'.format(sub_dir), 'holdout_fold={}'.format(holdout_fold), 
+        model_type, '{}_iterations.pth'.format(iteration))
     
     logs_dir = os.path.join(workspace, 'logs', filename, args.mode, 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
-        model_type, '{}'.format(sub_dir))
+        '{}'.format(sub_dir), 'holdout_fold={}'.format(holdout_fold), 
+        model_type)
     create_logging(logs_dir, 'w')
     logging.info(args)
         
@@ -288,7 +295,15 @@ def inference_validation(args):
 
     # Load model
     Model = eval(model_type)
-    model = Model(classes_num)
+    
+    if subtask in ['a', 'b']:
+        model = Model(in_domain_classes_num, activation='logsoftmax')
+        loss_func = nll_loss
+        
+    elif subtask == 'c':
+        model = Model(in_domain_classes_num, activation='sigmoid')
+        loss_func = F.binary_cross_entropy
+        
     checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint['model'])
     
@@ -300,7 +315,6 @@ def inference_validation(args):
         feature_hdf5_path=feature_hdf5_path, 
         train_csv=train_csv, 
         validate_csv=validate_csv, 
-        classes_num=classes_num, 
         scalar=scalar, 
         batch_size=batch_size)
     
@@ -308,6 +322,7 @@ def inference_validation(args):
     evaluator = Evaluator(
         model=model, 
         data_generator=data_generator, 
+        subtask=subtask, 
         cuda=cuda)
     
     if subtask in ['a', 'c']:
@@ -318,35 +333,40 @@ def inference_validation(args):
         evaluator.evaluate(data_type='validate', source='b', verbose=True)
         evaluator.evaluate(data_type='validate', source='c', verbose=True)
     
+    # Visualize log mel spectrogram
     if visualize:
-        evaluator.visualize(data_type='validate', sources='a')
+        evaluator.visualize(data_type='validate', source='a')
     
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example of parser. ')
     subparsers = parser.add_subparsers(dest='mode')
 
+    # Train
     parser_train = subparsers.add_parser('train')
-    parser_train.add_argument('--dataset_dir', type=str, required=True)
-    parser_train.add_argument('--workspace', type=str, required=True)
-    parser_train.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True)
+    parser_train.add_argument('--dataset_dir', type=str, required=True, help='Directory of dataset.')
+    parser_train.add_argument('--workspace', type=str, required=True, help='Directory of your workspace.')
+    parser_train.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True, help='Correspond to 3 subtasks in DCASE2019 Task1.')
     parser_train.add_argument('--data_type', type=str, choices=['development', 'evaluation'], required=True)
-    parser_train.add_argument('--model_type', type=str, required=True)
+    parser_train.add_argument('--holdout_fold', type=str, choices=['1', 'none'], required=True, help='Set 1 for development and none for training on all data without validation.')
+    parser_train.add_argument('--model_type', type=str, required=True, help='E.g., Cnn_9layers_AvgPooling.')
     parser_train.add_argument('--batch_size', type=int, required=True)
     parser_train.add_argument('--cuda', action='store_true', default=False)
-    parser_train.add_argument('--mini_data', action='store_true', default=False)
-    
+    parser_train.add_argument('--mini_data', action='store_true', default=False, help='Set True for debugging on a small part of data.')
+
+    # Inference validation data
     parser_inference_validation = subparsers.add_parser('inference_validation')
-    parser_inference_validation.add_argument('--dataset_dir', type=str, required=True)
-    parser_inference_validation.add_argument('--workspace', type=str, required=True)
-    parser_inference_validation.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True)
+    parser_inference_validation.add_argument('--dataset_dir', type=str, required=True, help='Directory of dataset.')
+    parser_inference_validation.add_argument('--workspace', type=str, required=True, help='Directory of your workspace.')
+    parser_inference_validation.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True, help='Correspond to 3 subtasks in DCASE2019 Task1.')
     parser_inference_validation.add_argument('--data_type', type=str, choices=['development'], required=True)
-    parser_inference_validation.add_argument('--model_type', type=str, required=True)
-    parser_inference_validation.add_argument('--iteration', type=int, required=True)
+    parser_inference_validation.add_argument('--holdout_fold', type=str, choices=['1'], required=True)
+    parser_inference_validation.add_argument('--model_type', type=str, required=True, help='E.g., Cnn_9layers_AvgPooling.')
+    parser_inference_validation.add_argument('--iteration', type=int, required=True, help='This iteration of the trained model will be loaded.')
     parser_inference_validation.add_argument('--batch_size', type=int, required=True)
     parser_inference_validation.add_argument('--cuda', action='store_true', default=False)
-    parser_inference_validation.add_argument('--visualize', action='store_true', default=False)
-    parser_inference_validation.add_argument('--mini_data', action='store_true', default=False)
+    parser_inference_validation.add_argument('--visualize', action='store_true', default=False, help='Visualize log mel spectrogram of different sound classes.')
+    parser_inference_validation.add_argument('--mini_data', action='store_true', default=False, help='Set True for debugging on a small part of data.')
     
     args = parser.parse_args()
     args.filename = get_filename(__file__)

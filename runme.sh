@@ -21,22 +21,22 @@ python utils/features.py calculate_scalar --subtask='b' --data_type='development
 python utils/features.py calculate_scalar --subtask='c' --data_type='development' --workspace=$WORKSPACE
 
 # Subtask A
-CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py train --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='a' --data_type='development' --model_type=$MODEL_TYPE --batch_size=$BATCH_SIZE --cuda
+CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py train --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='a' --data_type='development' --holdout_fold=1 --model_type=$MODEL_TYPE --batch_size=$BATCH_SIZE --cuda
 
-CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py inference_validation --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='a' --data_type='development' --model_type=$MODEL_TYPE --iteration=5000 --batch_size=$BATCH_SIZE --cuda
+CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py inference_validation --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='a' --data_type='development' --holdout_fold=1 --model_type=$MODEL_TYPE --iteration=5000 --batch_size=$BATCH_SIZE --cuda
 
 # Subtask B
-CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py train --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='b' --data_type='development' --model_type=$MODEL_TYPE --batch_size=$BATCH_SIZE --cuda
+CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py train --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='b' --data_type='development' --holdout_fold=1 --model_type=$MODEL_TYPE --batch_size=$BATCH_SIZE --cuda
 
-CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py inference_validation --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='b' --data_type='development' --model_type=$MODEL_TYPE --iteration=5000 --batch_size=$BATCH_SIZE --cuda
+CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py inference_validation --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='b' --data_type='development' --holdout_fold=1 --model_type=$MODEL_TYPE --iteration=5000 --batch_size=$BATCH_SIZE --cuda
 
 # Subtask C
-CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py train --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='c' --data_type='development' --model_type=$MODEL_TYPE --batch_size=$BATCH_SIZE --cuda
+CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py train --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='c' --data_type='development' --holdout_fold=1 --model_type=$MODEL_TYPE --batch_size=$BATCH_SIZE --cuda
 
-CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py inference_validation --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='c' --data_type='development' --model_type=$MODEL_TYPE --iteration=5000 --batch_size=$BATCH_SIZE --cuda
+CUDA_VISIBLE_DEVICES=$GPU_ID python pytorch/main.py inference_validation --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask='c' --data_type='development' --holdout_fold=1 --model_type=$MODEL_TYPE --iteration=5000 --batch_size=$BATCH_SIZE --cuda
 
 # Plot statistics
-python utils/plot_results.py --dataset_dir=$DATASET_DIR --workspace=$WORKSPACE --subtask=a
+python utils/plot_results.py --workspace=$WORKSPACE --subtask=a
 
 ############ END ############
 

@@ -62,3 +62,4 @@ def forward(model, generate_func, cuda, return_input=False,
         output_dict[key] = np.concatenate(output_dict[key], axis=0)
 
     return output_dict
+    

@@ -13,6 +13,6 @@ total_samples = sample_rate * audio_duration
 labels = ['airport', 'shopping_mall', 'metro_station', 'street_pedestrian', 
     'public_square', 'street_traffic', 'tram', 'bus', 'metro', 'park', 'unknown']
     
-classes_num = len(labels)
+# classes_num = len(labels)
 lb_to_idx = {lb: idx for idx, lb in enumerate(labels)}
 idx_to_lb = {idx: lb for idx, lb in enumerate(labels)}

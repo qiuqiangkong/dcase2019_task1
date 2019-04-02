@@ -113,6 +113,14 @@ def get_subdir(subtask, data_type):
         
         
 def read_metadata(metadata_path):
+    '''Read metadata from a csv file. 
+    
+    Returns:
+      meta_dict: dict of meta data, e.g.:
+        {'audio_name': np.array(['a.wav', 'b.wav', ...]), 
+         'scene_label': np.array(['airport', 'bus', ...]), 
+         ...}
+    '''
     df = pd.read_csv(metadata_path, sep='\t')
     
     meta_dict = {}
@@ -133,7 +141,7 @@ def read_metadata(metadata_path):
     
     
 def sparse_to_categorical(x, n_out):
-    x = x.astype(int)   # force type to int
+    x = x.astype(int)
     shape = x.shape
     x = x.flatten()
     N = len(x)
@@ -151,5 +159,5 @@ def get_sources(subtask):
         raise Exception('Incorrect argument!')
         
         
-def get_classes_num(subtask):
-    return len(config.labels) - 1   # Remove unknown label
+# def get_classes_num(subtask):
+#     return len(config.labels) - 1   # Remove unknown label

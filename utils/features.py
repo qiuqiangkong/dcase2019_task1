@@ -85,17 +85,17 @@ def calculate_feature_for_all_audio_files(args):
     
     Args:
       dataset_dir: string
+      workspace: string
       subtask: 'a' | 'b' | 'c'
       data_type: 'development' | 'evaluation'
-      workspace: string
       mini_data: bool, set True for debugging on a small part of data
     '''
 
     # Arguments & parameters
     dataset_dir = args.dataset_dir
+    workspace = args.workspace
     subtask = args.subtask
     data_type = args.data_type
-    workspace = args.workspace
     mini_data = args.mini_data
     
     sample_rate = config.sample_rate
@@ -107,7 +107,6 @@ def calculate_feature_for_all_audio_files(args):
     frames_per_second = config.frames_per_second
     frames_num = config.frames_num
     total_samples = config.total_samples
-    classes_num = config.classes_num
     lb_to_idx = config.lb_to_idx
     
     # Paths
@@ -192,13 +191,13 @@ def calculate_feature_for_all_audio_files(args):
             audio_path=audio_path, 
             target_fs=sample_rate)
         
-        # Pad or truncate audio recording
+        # Pad or truncate audio recording to the same length
         audio = pad_truncate_sequence(audio, total_samples)
         
         # Extract feature
         feature = feature_extractor.transform(audio)
         
-        # Remove the extra frames caused by padding zero
+        # Remove the extra log mel spectrogram frames caused by padding zero
         feature = feature[0 : frames_num]
         
         hf['feature'].resize((n + 1, frames_num, mel_bins))
@@ -214,15 +213,16 @@ def calculate_scalar(args):
     '''Calculate and write out scalar of features. 
     
     Args:
-      data_type: 'train'
       workspace: string
+      subtask: 'a' | 'b' | 'c'
+      data_type: 'train'
       mini_data: bool, set True for debugging on a small part of data
     '''
 
     # Arguments & parameters
+    workspace = args.workspace
     subtask = args.subtask
     data_type = args.data_type
-    workspace = args.workspace
     mini_data = args.mini_data
     
     mel_bins = config.mel_bins
@@ -270,19 +270,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     subparsers = parser.add_subparsers(dest='mode')
 
-    parser_logmel = subparsers.add_parser('calculate_feature_for_all_audio_files')
-    parser_logmel.add_argument('--dataset_dir', type=str, required=True)
-    parser_logmel.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True)
-    parser_logmel.add_argument('--data_type', type=str, choices=['development', 'evaluation'], required=True)
-    parser_logmel.add_argument('--workspace', type=str, required=True)
-    parser_logmel.add_argument('--mini_data', action='store_true', default=False)
-
-    parser_scalar = subparsers.add_parser('calculate_scalar')
-    parser_scalar.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True)
-    parser_scalar.add_argument('--data_type', type=str, choices=['development', 'evaluation'], required=True)
-    parser_scalar.add_argument('--workspace', type=str, required=True)
-    parser_scalar.add_argument('--mini_data', action='store_true', default=False)
+    # Calculate feature for all audio files
+    parser_logmel = subparsers.add_parser('calculate_feature_for_all_audio_files')    
+    parser_logmel.add_argument('--dataset_dir', type=str, required=True, help='Directory of dataset.')    
+    parser_logmel.add_argument('--workspace', type=str, required=True, help='Directory of your workspace.')        
+    parser_logmel.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True, help='Correspond to 3 subtasks in DCASE2019 Task1')        
+    parser_logmel.add_argument('--data_type', type=str, choices=['development', 'evaluation'], required=True)        
+    parser_logmel.add_argument('--mini_data', action='store_true', default=False, help='Set True for debugging on a small part of data.')
+        
+    # Calculate scalar
+    parser_scalar = subparsers.add_parser('calculate_scalar')    
+    parser_scalar.add_argument('--workspace', type=str, required=True, help='Directory of your workspace.')    
+    parser_scalar.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True, help='Correspond to 3 subtasks in DCASE2019 Task1')        
+    parser_scalar.add_argument('--data_type', type=str, choices=['development', 'evaluation'], required=True)        
+    parser_scalar.add_argument('--mini_data', action='store_true', default=False, help='Set True for debugging on a small part of data.')
     
+    # Parse arguments
     args = parser.parse_args()
     
     if args.mode == 'calculate_feature_for_all_audio_files':
