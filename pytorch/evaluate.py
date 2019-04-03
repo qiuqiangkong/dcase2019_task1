@@ -60,7 +60,7 @@ class Evaluator(object):
             generate_func=generate_func, 
             cuda=self.cuda, 
             return_target=True)
-            
+        
         output = output_dict['output']  # (audios_num, in_domain_classes_num)
         target = output_dict['target']  # (audios_num, in_domain_classes_num)
         

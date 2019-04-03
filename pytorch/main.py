@@ -127,6 +127,7 @@ def train(args):
         feature_hdf5_path=feature_hdf5_path, 
         train_csv=train_csv, 
         validate_csv=validate_csv, 
+        holdout_fold=holdout_fold, 
         scalar=scalar, 
         batch_size=batch_size)
     
@@ -160,15 +161,16 @@ def train(args):
                     max_iteration=None, 
                     verbose=False)
             
-            for source in sources_to_evaluate:
-                validate_statistics = evaluator.evaluate(
-                    data_type='validate', 
-                    source=source, 
-                    max_iteration=None, 
-                    verbose=False)
+            if holdout_fold != 'none':
+                for source in sources_to_evaluate:
+                    validate_statistics = evaluator.evaluate(
+                        data_type='validate', 
+                        source=source, 
+                        max_iteration=None, 
+                        verbose=False)
 
-                validate_statistics_container.append_and_dump(
-                    iteration, source, validate_statistics)
+                    validate_statistics_container.append_and_dump(
+                        iteration, source, validate_statistics)
 
             train_time = train_fin_time - train_bgn_time
             validate_time = time.time() - train_fin_time
@@ -315,6 +317,7 @@ def inference_validation(args):
         feature_hdf5_path=feature_hdf5_path, 
         train_csv=train_csv, 
         validate_csv=validate_csv, 
+        holdout_fold=holdout_fold, 
         scalar=scalar, 
         batch_size=batch_size)
     
@@ -362,12 +365,13 @@ if __name__ == '__main__':
     parser_inference_validation.add_argument('--data_type', type=str, choices=['development'], required=True)
     parser_inference_validation.add_argument('--holdout_fold', type=str, choices=['1'], required=True)
     parser_inference_validation.add_argument('--model_type', type=str, required=True, help='E.g., Cnn_9layers_AvgPooling.')
-    parser_inference_validation.add_argument('--iteration', type=int, required=True, help='This iteration of the trained model will be loaded.')
+    parser_inference_validation.add_argument('--iteration', type=int, required=True, help='Load model of this iteration.')
     parser_inference_validation.add_argument('--batch_size', type=int, required=True)
     parser_inference_validation.add_argument('--cuda', action='store_true', default=False)
     parser_inference_validation.add_argument('--visualize', action='store_true', default=False, help='Visualize log mel spectrogram of different sound classes.')
     parser_inference_validation.add_argument('--mini_data', action='store_true', default=False, help='Set True for debugging on a small part of data.')
     
+    # Parse arguments
     args = parser.parse_args()
     args.filename = get_filename(__file__)
 

@@ -14,7 +14,7 @@ import config
 
 class DataGenerator(object):
     
-    def __init__(self, feature_hdf5_path, train_csv, validate_csv, 
+    def __init__(self, feature_hdf5_path, train_csv, validate_csv, holdout_fold, 
         scalar, batch_size, seed=1234):
         '''Data generator for training and validation. 
         
@@ -22,6 +22,8 @@ class DataGenerator(object):
           feature_hdf5_path: string, path of hdf5 feature file
           train_csv: string, path of train csv file
           validate_csv: string, path of validate csv file
+          holdout_fold: set 1 for development and none for training 
+              on all data without validation
           scalar: object, containing mean and std value
           batch_size: int
           seed: int, random seed
@@ -50,10 +52,19 @@ class DataGenerator(object):
             
         self.validate_audio_indexes = self.get_audio_indexes(
             validate_meta, self.data_dict, 'validate')
+            
+        if holdout_fold == 'none':
+            self.train_audio_indexes = np.concatenate(
+                (self.train_audio_indexes, self.validate_audio_indexes), axis=0)
+                
+            self.validate_audio_indexes = np.array([])
         
         logging.info('Load data time: {:.3f} s'.format(time.time() - load_time))
         logging.info('Training audio num: {}'.format(len(self.train_audio_indexes)))            
         logging.info('Validation audio num: {}'.format(len(self.validate_audio_indexes)))
+        
+        self.random_state.shuffle(self.train_audio_indexes)
+        self.pointer = 0
         
     def load_hdf5(self, hdf5_path):
         '''Load hdf5 file. 
@@ -113,20 +124,18 @@ class DataGenerator(object):
         Returns:
           batch_data_dict: dict containing audio_name, feature and target
         '''
-        batch_size = self.batch_size
-        audio_indexes = np.array(self.train_audio_indexes)
-        self.random_state.shuffle(audio_indexes)
-        pointer = 0
 
         while True:
             # Reset pointer
-            if pointer >= len(audio_indexes):
-                pointer = 0
-                self.random_state.shuffle(audio_indexes)
+            if self.pointer >= len(self.train_audio_indexes):
+                self.pointer = 0
+                self.random_state.shuffle(self.train_audio_indexes)
 
             # Get batch audio_indexes
-            batch_audio_indexes = audio_indexes[pointer: pointer + batch_size]
-            pointer += batch_size
+            batch_audio_indexes = self.train_audio_indexes[
+                self.pointer: self.pointer + self.batch_size]
+                
+            self.pointer += self.batch_size
 
             batch_data_dict = {}
 
