@@ -101,6 +101,11 @@ def train(args):
     create_logging(logs_dir, 'w')
     logging.info(args)
 
+    if cuda:
+        logging.info('Using GPU.')
+    else:
+        logging.info('Using CPU. Set --cuda flag to use GPU.')
+
     # Load scalar
     scalar = load_scalar(scalar_path)
     
