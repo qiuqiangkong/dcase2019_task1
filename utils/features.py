@@ -116,8 +116,14 @@ def calculate_feature_for_all_audio_files(args):
         prefix = ''
         
     sub_dir = get_subdir(subtask, data_type)
-    metadata_path = os.path.join(dataset_dir, sub_dir, 'meta.csv')
     audios_dir = os.path.join(dataset_dir, sub_dir, 'audio')
+
+    if data_type == 'development':
+        metadata_path = os.path.join(dataset_dir, sub_dir, 'meta.csv')
+    elif data_type == 'leaderboard':
+        metadata_path = os.path.join(dataset_dir, sub_dir, 'evaluation_setup', 'test.csv')
+    else:
+        raise Exception('Incorrect data_type!')
     
     feature_path = os.path.join(workspace, 'features', 
         '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
@@ -142,10 +148,8 @@ def calculate_feature_for_all_audio_files(args):
         total_num = len(meta_dict['audio_name'])
         random_state = np.random.RandomState(1234)
         indexes = random_state.choice(total_num, size=mini_num, replace=False)
-        meta_dict['audio_name'] = meta_dict['audio_name'][indexes]
-        meta_dict['scene_label'] = meta_dict['scene_label'][indexes]
-        meta_dict['identifier'] = meta_dict['identifier'][indexes]
-        meta_dict['source_label'] = meta_dict['source_label'][indexes]
+        for key in meta_dict.keys():
+            meta_dict[key] = meta_dict[key][indexes]
         
     print('Extracting features of all audio files ...')
     extract_time = time.time()
@@ -275,14 +279,14 @@ if __name__ == '__main__':
     parser_logmel.add_argument('--dataset_dir', type=str, required=True, help='Directory of dataset.')    
     parser_logmel.add_argument('--workspace', type=str, required=True, help='Directory of your workspace.')        
     parser_logmel.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True, help='Correspond to 3 subtasks in DCASE2019 Task1')        
-    parser_logmel.add_argument('--data_type', type=str, choices=['development', 'evaluation'], required=True)        
+    parser_logmel.add_argument('--data_type', type=str, choices=['development', 'leaderboard', 'evaluation'], required=True)        
     parser_logmel.add_argument('--mini_data', action='store_true', default=False, help='Set True for debugging on a small part of data.')
         
     # Calculate scalar
     parser_scalar = subparsers.add_parser('calculate_scalar')    
     parser_scalar.add_argument('--workspace', type=str, required=True, help='Directory of your workspace.')    
     parser_scalar.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True, help='Correspond to 3 subtasks in DCASE2019 Task1')        
-    parser_scalar.add_argument('--data_type', type=str, choices=['development', 'evaluation'], required=True)        
+    parser_scalar.add_argument('--data_type', type=str, choices=['development'], required=True)        
     parser_scalar.add_argument('--mini_data', action='store_true', default=False, help='Set True for debugging on a small part of data.')
     
     # Parse arguments
