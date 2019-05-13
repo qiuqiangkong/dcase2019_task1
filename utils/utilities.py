@@ -158,6 +158,40 @@ def get_sources(subtask):
     else:
         raise Exception('Incorrect argument!')
         
-        
-# def get_classes_num(subtask):
-#     return len(config.labels) - 1   # Remove unknown label
+
+def write_submission(output_dict, subtask, data_type, submission_path):
+    '''Write output to submission. 
+
+    Args:
+      output_dict: 
+        {'audio_name': (audios_num,), 'output': (audios_num, classes_num)}
+      subtask: 'a' | 'b' | 'c'
+      data_type: 'leaderboard' | 'evaluation'
+      submission_path: string
+    '''
+    fw = open(submission_path, 'w')
+
+    if data_type == 'leaderboard':
+        delimiter = ','
+    elif data_type == 'evaluation':
+        delimiter = '\t'
+
+    if data_type == 'leaderboard':
+        fw.write('{}{}{}\n'.format('Id', delimiter, 'Scene_label'))
+
+    for n in range(len(output_dict['audio_name'])):
+        audio_name = output_dict['audio_name'][n]
+
+        if data_type == 'leaderboard':
+            audio_name =  os.path.splitext(audio_name)[0]
+
+        pred_label = config.idx_to_lb[np.argmax(output_dict['output'][n])]
+
+        if subtask == 'c':
+            if np.max(output_dict['output'][n]) < 0.5:
+                pred_label = 'unknown'
+                    
+        fw.write('{},{}\n'.format(audio_name, pred_label))
+
+    fw.close()
+    logging.info('Write submission to {}'.format(submission_path))
