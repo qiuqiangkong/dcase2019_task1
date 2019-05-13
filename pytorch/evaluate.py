@@ -80,10 +80,10 @@ class Evaluator(object):
             
         if self.subtask in ['a', 'b']:
             confusion_matrix = metrics.confusion_matrix(
-                y_true, y_pred, labels = np.arange(self.in_domain_classes_num))
+                y_true, y_pred, labels=np.arange(self.in_domain_classes_num))
         elif self.subtask == 'c':
             confusion_matrix = metrics.confusion_matrix(
-                y_true, y_pred, labels = np.arange(self.all_classes_num))
+                y_true, y_pred, labels=np.arange(self.all_classes_num))
         
         classwise_accuracy = np.diag(confusion_matrix) \
             / np.sum(confusion_matrix, axis=-1)
