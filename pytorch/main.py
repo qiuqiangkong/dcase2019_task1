@@ -14,13 +14,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from utilities import (create_folder, get_filename, create_logging, load_scalar, 
-    get_subdir, get_sources)
-from data_generator import DataGenerator
+    get_subdir, get_sources, write_submission)
+from data_generator import DataGenerator, EvaluationDataGenerator
 from models import (Cnn_5layers_AvgPooling, Cnn_9layers_MaxPooling, 
     Cnn_9layers_AvgPooling, Cnn_13layers_AvgPooling)
 from losses import nll_loss
 from evaluate import Evaluator, StatisticsContainer
-from pytorch_utils import move_data_to_gpu
+from pytorch_utils import move_data_to_gpu, forward
 import config
 
 
@@ -344,7 +344,109 @@ def inference_validation(args):
     # Visualize log mel spectrogram
     if visualize:
         evaluator.visualize(data_type='validate', source='a')
+
+
+def inference_evaluation(args):
+    '''Inference on evaluation data and write out submission file. 
     
+    Args: 
+      subtask: 'a' | 'b' | 'c', corresponds to 3 subtasks in DCASE2019 Task1
+      data_type: 'leaderboard' | 'evaluation'
+      workspace: string, directory of workspace
+      model_type: string, e.g. 'Cnn_9layers'
+      iteration: int
+      batch_size: int
+      cuda: bool
+      mini_data: bool, set True for debugging on a small part of data
+      visualize: bool
+    '''
+    # Arugments & parameters
+    subtask = args.subtask
+    data_type = args.data_type
+    workspace = args.workspace
+    model_type = args.model_type
+    iteration = args.iteration
+    batch_size = args.batch_size
+    cuda = args.cuda and torch.cuda.is_available()
+    mini_data = args.mini_data
+    filename = args.filename
+    holdout_fold = 'none'
+    
+    mel_bins = config.mel_bins
+    frames_per_second = config.frames_per_second
+    
+    in_domain_classes_num = len(config.labels) - 1
+    
+    # Paths
+    if mini_data:
+        prefix = 'minidata_'
+    else:
+        prefix = ''
+        
+    sub_dir = get_subdir(subtask, data_type)
+    trained_sub_dir = get_subdir(subtask, 'development')
+    
+    feature_hdf5_path = os.path.join(workspace, 'features', 
+        '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
+        '{}.h5'.format(sub_dir))
+        
+    scalar_path = os.path.join(workspace, 'scalars', 
+        '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
+        '{}.h5'.format(trained_sub_dir))
+        
+    checkpoint_path = os.path.join(workspace, 'checkpoints', filename, 
+        '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
+        '{}'.format(trained_sub_dir), 'holdout_fold={}'.format(holdout_fold), 
+        model_type, '{}_iterations.pth'.format(iteration))
+    
+    submission_path = os.path.join(workspace, 'submissions', 
+        '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
+        sub_dir, 'holdout_fold={}'.format(holdout_fold), model_type, 
+        '{}_iterations'.format(iteration), 'submission.csv')
+    create_folder(os.path.dirname(submission_path))
+
+    logs_dir = os.path.join(workspace, 'logs', filename, args.mode, 
+        '{}logmel_{}frames_{}melbins'.format(prefix, frames_per_second, mel_bins), 
+        '{}'.format(sub_dir), 'holdout_fold={}'.format(holdout_fold), 
+        model_type)
+    create_logging(logs_dir, 'w')
+    logging.info(args)
+        
+    # Load scalar
+    scalar = load_scalar(scalar_path)
+
+    # Load model
+    Model = eval(model_type)
+    
+    if subtask in ['a', 'b']:
+        model = Model(in_domain_classes_num, activation='logsoftmax')
+        loss_func = nll_loss
+        
+    elif subtask == 'c':
+        model = Model(in_domain_classes_num, activation='sigmoid')
+        loss_func = F.binary_cross_entropy
+        
+    checkpoint = torch.load(checkpoint_path)
+    model.load_state_dict(checkpoint['model'])
+    
+    if cuda:
+        model.cuda()
+        
+    # Data generator
+    data_generator = EvaluationDataGenerator(
+        feature_hdf5_path=feature_hdf5_path, 
+        scalar=scalar, 
+        batch_size=batch_size)
+    
+    generate_func = data_generator.generate_evaluation(data_type)
+
+    # Inference
+    output_dict = forward(model, generate_func, cuda, return_input=False, 
+        return_target=False)
+
+    # Write submission
+    write_submission(output_dict, subtask, data_type, submission_path)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example of parser. ')
@@ -375,7 +477,18 @@ if __name__ == '__main__':
     parser_inference_validation.add_argument('--cuda', action='store_true', default=False)
     parser_inference_validation.add_argument('--visualize', action='store_true', default=False, help='Visualize log mel spectrogram of different sound classes.')
     parser_inference_validation.add_argument('--mini_data', action='store_true', default=False, help='Set True for debugging on a small part of data.')
-    
+
+    # Inference evaluation data
+    parser_inference_validation = subparsers.add_parser('inference_evaluation')
+    parser_inference_validation.add_argument('--workspace', type=str, required=True, help='Directory of your workspace.')
+    parser_inference_validation.add_argument('--subtask', type=str, choices=['a', 'b', 'c'], required=True, help='Correspond to 3 subtasks in DCASE2019 Task1.')
+    parser_inference_validation.add_argument('--data_type', type=str, choices=['leaderboard', 'evaluation'], required=True)
+    parser_inference_validation.add_argument('--model_type', type=str, required=True, help='E.g., Cnn_9layers_AvgPooling.')
+    parser_inference_validation.add_argument('--iteration', type=int, required=True, help='Load model of this iteration.')
+    parser_inference_validation.add_argument('--batch_size', type=int, required=True)
+    parser_inference_validation.add_argument('--cuda', action='store_true', default=False)
+    parser_inference_validation.add_argument('--mini_data', action='store_true', default=False, help='Set True for debugging on a small part of data.')
+
     # Parse arguments
     args = parser.parse_args()
     args.filename = get_filename(__file__)
@@ -385,6 +498,9 @@ if __name__ == '__main__':
 
     elif args.mode == 'inference_validation':
         inference_validation(args)
+
+    elif args.mode == 'inference_evaluation':
+        inference_evaluation(args)
 
     else:
         raise Exception('Error argument!')
